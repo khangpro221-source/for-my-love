@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Thư gửi bạn 💌</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+
+  :root{
+    --color-env: #ffd6e8;
+    --color-env2: #ffc1dc;
+    --color-flap: #ffb3d9;
+    --color-heart: #ff6699;
+  }
+
+  html, body {
+    margin:0; padding:0; width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Pacifico', cursive;
+    background: radial-gradient(circle at center, #ffe9f3 0%, #f9c5d1 100%);
+    overflow:hidden;
+  }
+
+  /* Background decorations */
+  .background-deco { position:absolute; inset:0; overflow:hidden; z-index:1; }
+  @keyframes floatUp {
+    0% { transform: translateY(100vh) scale(0.8) rotate(0deg); opacity:0; }
+    10%,90% { opacity:1; }
+    100% { transform: translateY(-10vh) scale(1.2) rotate(360deg); opacity:0; }
+  }
+
+  /* Envelope */
+  .envlope-wrapper{
+    height:400px; display:flex; align-items:center; justify-content:center;
+    position:relative; z-index:3; flex-direction:column; animation:float 3s ease-in-out infinite;
+  }
+
+  #envelope {
+    width:380px; height:260px; background-color:var(--color-flap);
+    border-radius:8px; box-shadow:0 8px 25px rgba(255,100,150,0.3);
+    position:relative; cursor:pointer; transition:transform .3s ease;
+  }
+  #envelope:hover{ transform:scale(1.02); }
+
+  .front{ position:absolute; width:0; height:0; z-index:4; }
+  .flap {
+    border-left:190px solid transparent; border-right:190px solid transparent;
+    border-top:150px solid var(--color-flap); border-radius:6px;
+    transform-origin:top; pointer-events:none;
+    box-shadow:0 4px 8px rgba(255,150,180,0.3);
+    transition: transform .5s ease;
+  }
+  .pocket {
+    border-left:190px solid var(--color-env); border-right:190px solid var(--color-env);
+    border-bottom:90px solid var(--color-env2); border-top:150px solid transparent;
+    border-bottom-left-radius:8px; border-bottom-right-radius:8px;
+  }
+
+  .letter {
+    position:absolute; top:5%; left:5%; width:90%; height:90%;
+    background-color:#fff7fb; border-radius:10px;
+    box-shadow:0 4px 20px rgba(0,0,0,.08);
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; font-size:1.3em; color:#d46a84;
+    padding:20px; box-sizing:border-box;
+    transition:transform .8s ease, opacity .6s ease;
+    z-index:2;
+  }
+
+  /* Open/close */
+  .open .flap { transform:rotateX(180deg); z-index:1; }
+  .close .flap { transform:rotateX(0deg); z-index:5; }
+  .open .letter { transform:translateY(-100px) rotate(-1deg); }
+  .close .letter { transform:translateY(0); }
+
+  .message-text { opacity:0; transform:translateY(20px); transition:opacity .8s ease, transform .8s ease; }
+  .letter.show-message .message-text { opacity:1; transform:translateY(0); }
+
+  .typing {
+    display:inline-block; border-right:2px solid #d46a84;
+    white-space:nowrap; overflow:hidden;
+    animation:typing 2s steps(30,end), blink .75s step-end infinite;
+  }
+  @keyframes typing { from{width:0} to{width:100%} }
+  @keyframes blink { 50%{border-color:transparent} }
+
+  /* Hearts */
+  .heart-explosion {
+    position:fixed; inset:0; pointer-events:none;
+    display:none; opacity:0; transition:opacity .6s ease;
+    z-index:9000;
+  }
+  .heart-explosion.active { display:block; opacity:1; }
+  .heart {
+    position:absolute; background:var(--color-heart); transform:rotate(45deg);
+    animation:fly 3.2s cubic-bezier(.22,.9,.25,1) forwards; opacity:0.95;
+    border-radius:4px; pointer-events:none; will-change: transform, opacity;
+  }
+  .heart::before, .heart::after { content:''; position:absolute; background:var(--color-heart); border-radius:50%; }
+  .heart::before{ top:-50%; left:0; } .heart::after{ left:-50%; top:0; }
+  @keyframes fly { 0%{transform:translate3d(0,100vh,0) scale(.6) rotate(45deg);opacity:1;} 100%{transform:translate3d(0,-150vh,0) scale(1.6) rotate(45deg);opacity:0;} }
+
+  /* After Scene */
+ .after-scene {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+
+
+  /* đặt file ảnh PNG (after-bg.png) cùng thư mục với HTML */
+  background:
+    linear-gradient(rgba(255,255,255,0.04), rgba(0,0,0,0.06)), /* nhẹ overlay */
+    url('after-bg.png') center/cover no-repeat fixed;
+  background-color: #f6eef2; /* fallback */
+  transition: opacity 2000ms ease;
+  will-change: opacity, transform;
+}
+
+.after-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 60% at 50% 30%, rgba(255,255,255,0.02), transparent 40%),
+              linear-gradient(180deg, rgba(0,0,0,0.06), transparent 50%);
+  mix-blend-mode: overlay;
+  z-index: 2;
+}
+
+/* chỉ định thứ tự layer */
+.after-scene .scenery-svg { display:none; } /* ẩn SVG cũ nếu có */
+.after-inner { position:relative; z-index:3; }
+
+/* reduced-motion fallback */
+@media (prefers-reduced-motion: reduce) {
+  .after-scene { background-attachment: scroll; transition: none; }
+  .after-scene::before { background: none; }
+}
+/* floating clouds animation */
+@keyframes cloudMove {
+  0%{ transform: translateX(-10%); }
+  50%{ transform: translateX(8%); }
+  100%{ transform: translateX(-10%); }
+}
+.after-scene .cloud { transform-origin:center; animation: cloudMove 28s ease-in-out infinite; opacity:0.95; }
+
+/* subtle water shimmer */
+@keyframes waterShimmer {
+  0%{ transform: translateX(0); opacity:0.95; }
+  50%{ transform: translateX(6%); opacity:1; }
+  100%{ transform: translateX(0); opacity:0.95; }
+}
+.after-scene .water-sheen { will-change: transform, opacity; animation: waterShimmer 6s ease-in-out infinite; opacity:0.9; }
+
+/* small foreground flowers floating */
+@keyframes flowerFloat {
+  0%{ transform: translateY(0) scale(1); }
+  50%{ transform: translateY(-8px) scale(1.02); }
+  100%{ transform: translateY(0) scale(1); }
+}
+.after-scene .fg-flower { animation: flowerFloat 6s ease-in-out infinite; transform-origin:center; }
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .after-scene .cloud, .after-scene .water-sheen, .after-scene .fg-flower { animation: none !important; }
+}
+
+/* keep typewriter text readable */
+.after-inner .typewriter { pointer-events:auto; color:#5b1039; font-family:monospace; font-size:2rem; text-align:center; text-shadow:0 2px 8px rgba(255,255,255,0.35); }
+  /* Clouds */
+  .cloud {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0.6;
+  filter: blur(15px);
+  box-shadow: 0 0 15px rgba(255,255,255,0.4);
+}
+
+/* animation bay ngang */
+@keyframes moveCloud {
+  from { transform: translateX(-300px); }
+  to { transform: translateX(110vw); }
+}
+
+/* CSS: petal hiện tại (thay thế phần .petal cũ) */
+.petal {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transform-origin: center;
+  z-index: 10005;
+  display: none;        /* JS bật khi spawn */
+  opacity: 0;
+  font-size: 20px;      /* ghi đè bởi JS */
+  line-height: 1;
+  text-shadow: 0 6px 14px rgba(0,0,0,0.12);
+}
+@media (max-width: 420px) {
+  .envlope-wrapper {
+    /* Thu nhỏ phong bì để vừa màn hình điện thoại */
+    transform: scale(0.85);
+    /* Tắt tạm animation float để việc scale chuẩn hơn */
+    animation: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .envlope-wrapper {
+    /* Thu nhỏ hơn nữa cho màn hình rất nhỏ */
+    transform: scale(0.75);
+  }
+}
+/* remove CSS animation usage (JS will animate) */
+/* ...existing code... */
+</style>
+</head>
+<body>
+
+<div class="background-deco" id="deco"></div>
+
+<div class="envlope-wrapper" id="envWrap">
+  <div id="envelope" class="close">
+    <div class="front flap"></div>
+    <div class="front pocket"></div>
+    <div class="letter" id="letter">
+      <div class="message-text">Click để mở thư 💌</div>
+    </div>
+  </div>
+</div>
+
+<!-- Hearts -->
+<div class="heart-explosion" id="heartExplosion"></div>
+
+<!-- After Scene (replace inner contents) -->
+<div class="after-scene" id="afterScene" aria-hidden="true">
+  <div class="after-inner">
+    <div class="typewriter" id="typewriter"></div>
+  </div>
+</div>
+
+<!-- Audio -->
+<audio id="bgMusic" src="doitchu.mp3" preload="auto" loop></audio>
+
+<script src="https://unpkg.com/css-doodle@0.15.3/css-doodle.min.js"></script>
+
+<script>
+const envelope = document.getElementById("envelope");
+const letter = document.getElementById("letter");
+const message = letter.querySelector(".message-text");
+const explosion = document.getElementById("heartExplosion");
+const envWrap = document.getElementById("envWrap");
+const afterScene = document.getElementById("afterScene");
+const deco = document.getElementById("deco");
+const bgMusic = document.getElementById("bgMusic");
+
+let typeTimers = [];
+
+// Floating symbols
+const symbols = ['✨','🌸','💖','🌼','⭐','💫','💌'];
+for (let i=0;i<40;i++){
+  const span = document.createElement('span');
+  span.textContent = symbols[Math.floor(Math.random()*symbols.length)];
+  span.style.left = Math.random()*100 + 'vw';
+  span.style.top  = Math.random()*100 + 'vh';
+  span.style.position = 'absolute';
+  span.style.fontSize = (12 + Math.random()*12) + 'px';
+  span.style.opacity = (0.3 + Math.random()*0.7).toString();
+  span.style.animation = 'floatUp ' + (8 + Math.random()*8) + 's linear infinite';
+  deco.appendChild(span);
+}
+
+// Spawn hearts
+function createHeart() {
+  const h = document.createElement('div');
+  h.className = 'heart';
+  const size = 12 + Math.random() * 36;
+  h.style.width = h.style.height = size + 'px';
+  h.style.left = (Math.random() * 100) + 'vw';
+  h.style.bottom = (-30 - Math.random()*20) + 'px';
+  h.style.opacity = (0.6 + Math.random() * 0.4).toString(); // <-- sửa ở đây (thêm *)
+  h.style.animationDuration = (2.5 + Math.random()*1.6) + 's';
+  h.style.animationDelay = (Math.random()*0.6) + 's';
+  explosion.appendChild(h);
+  h.addEventListener('animationend', ()=> h.remove());
+}
+
+function spawnHearts(total=30){
+  let created=0;
+  function tick(){
+    if(created>=total) return;
+    createHeart(); created++;
+    setTimeout(tick, 80+Math.random()*70);
+  }
+  tick();
+}
+
+// Envelope click
+// sau khi click mở thư
+envelope.addEventListener('click', ()=>{
+  if(!envelope.classList.contains('close')) return;
+  envelope.classList.remove('close'); envelope.classList.add('open');
+
+  // music fade-in
+  bgMusic.volume=0; bgMusic.play().catch(()=>{});
+  let v=0; const fade=setInterval(()=>{ v=Math.min(0.8,v+0.02); bgMusic.volume=v; if(v>=0.8) clearInterval(fade); },200);
+
+  // Typing
+  setTimeout(()=>{ message.innerHTML='<span class="typing">Tui có món quà cho bạn nè 💖🌸</span>'; letter.classList.add('show-message'); },800);
+
+  // Floating hearts + flowers
+  setTimeout(()=> {
+    // prevent multiple activations
+    if (envelope.dataset.opened) return;
+    envelope.dataset.opened = '1';
+
+    console.log('start particles');
+
+    explosion.classList.add('active');
+    const icons = ['💖','🌸','✨','🌼','💫','💌'];
+    let count = 0;
+    const total = 80;          // giảm tổng để bớt lag
+    const maxActive = 30;      // tối đa phần tử tồn tại cùng lúc
+
+    // safe appendChild: nếu vượt maxActive, remove oldest
+    const originalAppend = explosion.appendChild.bind(explosion);
+    explosion.appendChild = function(node){
+      while (explosion.children.length >= maxActive) {
+        const first = explosion.firstElementChild;
+        if (!first) break;
+        first.remove();
+      }
+      return originalAppend(node);
+    };
+
+    function spawn(){
+      if (count >= total) return;
+
+      const span = document.createElement('span');
+      const icon = icons[Math.floor(Math.random() * icons.length)];
+      span.textContent = icon;
+      span.style.position = 'absolute';
+      span.style.left = (Math.random() * 100) + 'vw';
+      span.style.bottom = '-30px';
+
+      const size = Math.floor(18 + Math.random() * 48); // 18-66px (hợp lý)
+      span.style.fontSize = size + 'px';
+      span.style.width = size + 'px';
+      span.style.height = size + 'px';
+      span.style.display = 'inline-block';
+      span.style.lineHeight = size + 'px';
+      span.style.textAlign = 'center';
+      span.style.transformOrigin = 'center center';
+
+      span.style.opacity = (0.6 + Math.random() * 0.35).toString();
+
+      // thời gian bay: 4-8s (ngắn hơn để giải phóng DOM)
+      const dur = 4 + Math.random() * 4;
+      span.style.transition = `transform ${dur}s cubic-bezier(.22,.9,.25,1), opacity ${dur}s linear`;
+      span.style.pointerEvents = 'none';
+
+      explosion.appendChild(span);
+
+      // animate lên
+      requestAnimationFrame(()=>{
+        span.style.transform = `translateY(-180vh) rotate(${Math.random()*720 - 360}deg) scale(${0.85 + Math.random()*1.2})`;
+        span.style.opacity = '0';
+      });
+
+      // remove sau khi hoàn thành
+      setTimeout(()=> {
+        if (span.parentElement) span.remove();
+      }, dur * 1000 + 250);
+
+      count++;
+
+      // stagger spawn: 120-300ms (giảm mật độ)
+      const nextDelay = 120 + Math.random() * 180;
+      setTimeout(spawn, nextDelay);
+    }
+
+    // bắt đầu spawn
+    spawn();
+  }, 3000);
+
+  // Final transition -> afterScene (fade-out envelope, fade-in afterScene)
+  setTimeout(() => {
+    // stop heart explosion visuals (guarded)
+    if (explosion) {
+      explosion.classList.remove('active');
+      setTimeout(() => { if (explosion) explosion.style.display = 'none'; }, 600);
+    }
+
+    const fadeEls = [envWrap, deco];
+    // apply smooth fade-out to envelope and background deco
+    fadeEls.forEach(el => {
+      if (!el) return;
+      // hint browser to optimize compositing for smoother transitions
+      el.style.willChange = 'opacity, transform';
+      el.style.transition = 'opacity 900ms cubic-bezier(.2,.8,.2,1), transform 900ms cubic-bezier(.2,.8,.2,1)';
+      el.style.opacity = '1'; // ensure starting value
+      el.style.transform = 'translateY(0) scale(1)';
+      // force reflow so transition applies
+      void el.offsetWidth;
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-10px) scale(0.98)';
+      el.style.pointerEvents = 'none';
+    });
+
+    // prepare afterScene for fade-in
+    afterScene.style.display = 'flex';
+    afterScene.style.opacity = '0';
+    // match JS duration với CSS (2000ms)
+    afterScene.style.transition = 'opacity 2000ms ease';
+    afterScene.style.pointerEvents = 'none';
+    // small timeout to ensure the browser registers the styles
+    requestAnimationFrame(() => {
+      afterScene.style.opacity = '1';
+      afterScene.classList.add('show');
+      afterScene.setAttribute('aria-hidden', 'false');
+      afterScene.style.pointerEvents = 'auto';
+    });
+
+    // fully hide old elements after fade completes and start typewriter
+    // dùng 2050ms (duration + small buffer)
+    setTimeout(() => {
+      fadeEls.forEach(el => { el.style.display = 'none'; });
+      startTypewriter();
+    }, 2050);
+  }, 5500);
+});
+
+
+// Typewriter
+function startTypewriter() {
+  const texts = [
+      "Bạn ơi!!!",
+      "Hôm nay là ngày 20/10 á!",
+      "Chúc bạn một ngày thật ý nghĩa 💖",
+      "Ngập tràn yêu thương và hạnh phúc. 💌",
+      "Chúc bạn luôn mạnh khỏe, gặp nhiều may mắn 🌷",
+      "Hãy tận hưởng ngày đặc biệt này với bất ngờ dễ thương nhé! 🎁",
+      "Đây là món quà nhỏ từ tớ...",
+      "Nhưng là cả tấm lòng của tớ đó nhé 💖",
+      "Bạn đừng chê nhé 😁",
+      "💖💖💖💖💖💖💖💖💖💖💖💖",
+      "Chúc bạn tràn đầy năng lượng tích cực 😄",
+      "Nhan sắc ngày càng rạng rỡ nhé! 🌟",
+      "Ngày càng xinh đẹp, thông minh và tuyệt như 1 đoá hoa! 🌸",
+      "Và luôn phấn đấu vì những ước mơ của mình nhé! 🚀",
+      "Mải yêu 💖💖💖💖💖",
+  ];
+
+  const el = document.getElementById('typewriter');
+
+  // Đồng bộ kiểu chữ với font ở trên (Pacifico) và điều chỉnh style hiển thị
+  el.style.fontFamily = "'Pacifico', cursive";
+  el.style.fontSize = "2.2rem";
+  el.style.color = "#FF69B4";
+  el.style.letterSpacing = "0.6px";
+  el.style.lineHeight = "1.1";
+  el.style.textAlign = "center";
+  el.style.padding = "0 1rem";
+  el.style.maxWidth = "90vw";
+  el.style.whiteSpace = "pre-wrap";
+  el.style.transition = "opacity 300ms ease";
+  el.style.opacity = "1";
+
+  let i = 0;
+  // clear any lingering timers if rerun
+  (typeTimers || []).forEach(t => clearTimeout(t));
+  typeTimers = [];
+
+  function typeText(text, callback) {
+      el.textContent = '';
+      let j = 0;
+
+      function typeChar() {
+          if (j < text.length) {
+              el.textContent = text.slice(0, j + 1);
+              j++;
+              typeTimers.push(setTimeout(typeChar, 45)); // tốc độ gõ nhẹ, mượt hơn với font script
+          } else {
+              typeTimers.push(setTimeout(eraseText, 2000)); // giữ chữ 2s rồi xoá
+          }
+      }
+
+      function eraseText() {
+          if (j > 0) {
+              el.textContent = text.slice(0, j - 1);
+              j--;
+              typeTimers.push(setTimeout(eraseText, 35)); // tốc độ xoá
+          } else if (callback) {
+              typeTimers.push(setTimeout(callback, 350)); // delay trước khi gõ tiếp
+          }
+      }
+
+      typeChar();
+  }
+
+  function next() {
+      if (i >= texts.length) i = 0;
+      typeText(texts[i], () => {
+          i++;
+          next();
+      });
+  }
+
+  next();
+}
+
+</script>
+<script>
+// tạo mây ngẫu nhiên
+const numClouds = 25; // số lượng mây
+const body = document.body;
+
+for (let i = 0; i < numClouds; i++) {
+  const cloud = document.createElement('div');
+  cloud.classList.add('cloud');
+
+  // kích thước ngẫu nhiên
+  const width = Math.random() * 200 + 200; // 200-400px
+  const height = width * 0.6;               // tỉ lệ 1:2
+  const top = Math.random() * window.innerHeight * 0.6; // vị trí ngẫu nhiên
+  const duration = Math.random() * 60 + 40; // 40-100s
+
+  Object.assign(cloud.style, {
+    width: `${width}px`,
+    height: `${height}px`,
+    top: `${top}px`,
+    left: `${-Math.random() * 300}px`,
+    animation: `moveCloud ${duration}s linear infinite`,
+    animationDelay: `-${Math.random() * duration}s`,
+    zIndex: "1"
+  });
+
+  // tạo bụng mây mềm mại
+  const p1 = document.createElement('div');
+  const p2 = document.createElement('div');
+  const p3 = document.createElement('div');
+
+  [p1,p2,p3].forEach((p,index) => {
+    p.style.position = 'absolute';
+    p.style.background = '#fff';
+    p.style.borderRadius = '50%';
+    cloud.appendChild(p);
+  });
+
+  p1.style.width = `${width * 0.5}px`;
+  p1.style.height = `${height}px`;
+  p1.style.top = `-${height * 0.2}px`;
+  p1.style.left = `${width * 0.1}px`;
+
+  p2.style.width = `${width * 0.6}px`;
+  p2.style.height = `${height * 0.9}px`;
+  p2.style.top = `-${height * 0.1}px`;
+  p2.style.left = `${width * 0.3}px`;
+
+  p3.style.width = `${width * 0.4}px`;
+  p3.style.height = `${height * 0.8}px`;
+  p3.style.top = `0px`;
+  p3.style.left = `${width * 0.6}px`;
+  body.appendChild(cloud);
+}
+</script>
+<script>
+// ----- PETALS RƠI HOÀN CHỈNH -----
+const after = document.getElementById('afterScene');
+const petals = [];
+const numPetals = 40; // tăng số lượng hoa
+let bodyWidth = window.innerWidth; // Dùng let để có thể cập nhật
+let bodyHeight = window.innerHeight; // Dùng let để có thể cập nhật
+
+function random(min,max){ return Math.random()*(max-min)+min; }
+
+function createPetal(){
+  const p = document.createElement('div');
+  p.className = 'petal';
+  p.textContent = '🌸';
+  p.style.position = 'absolute'; // bắt buộc absolute trong afterScene
+  p.style.display = 'block'; // Từ lần sửa trước
+  p.style.top = '-50px';
+
+  // THAY ĐỔI 1: Bắt đầu ngẫu nhiên khắp chiều ngang
+  p.style.left = random(0, bodyWidth) + 'px'; 
+  
+  p.style.fontSize = random(24,36) + 'px';
+  p.style.opacity = random(0.7,1);
+  
+  // THAY ĐỔI 2: Bay ngẫu nhiên sang trái hoặc phải
+  p.speedX = random(-1, 1); 
+  
+  p.speedY = random(1,2.5);      // tốc độ rơi
+  p.angle = random(0,360);
+  p.rotationSpeed = random(-2,2);
+  after.appendChild(p);
+  petals.push(p);
+}
+
+// Tạo tất cả petals
+for(let i=0;i<numPetals;i++) createPetal();
+
+function animatePetals(){
+  petals.forEach(p=>{
+    let top = parseFloat(p.style.top) + p.speedY;
+    let left = parseFloat(p.style.left) + p.speedX;
+    let angle = (p.angle + p.rotationSpeed) % 360;
+
+    p.style.top = top + 'px';
+    p.style.left = left + 'px';
+    p.style.transform = `rotate(${angle}deg)`;
+    p.angle = angle;
+
+    // THAY ĐỔI 3: Chỉ reset khi rơi ra ngoài đáy màn hình
+    if(top > bodyHeight + 50){
+      p.style.top = '-50px';
+
+      // THAY ĐỔI 4: Reset vị trí ngang ngẫu nhiên
+      p.style.left = random(0, bodyWidth)+'px'; 
+
+      // THAY ĐỔI 5: Reset tốc độ ngang ngẫu nhiên
+      p.speedX = random(-1, 1); 
+      
+      p.speedY = random(1,2.5);
+      p.style.fontSize = random(24,36)+'px';
+      p.style.opacity = random(0.7,1);
+    }
+  });
+  requestAnimationFrame(animatePetals);
+}
+
+// Chỉ bắt đầu khi afterScene hiển thị
+function waitAfterScene(){
+  if(getComputedStyle(after).display !== 'none'){
+    animatePetals();
+  } else {
+    setTimeout(waitAfterScene,100);
+  }
+}
+waitAfterScene();
+
+// Resize window
+window.addEventListener('resize', ()=>{
+  bodyWidth = window.innerWidth;
+  bodyHeight = window.innerHeight;
+});
+
+</script>
+</body>
+</html>
